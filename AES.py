@@ -13,7 +13,7 @@ mode = None
 def setArgs():
 	args = getArgs(sys.argv)
 
-	global keysize, kefile, inputfile, outputfile, mode
+	global keysize, keyfile, inputfile, outputfile, mode
 
 	keysize = int(args['--keysize'])
 	keyfile = args['--keyfile']
@@ -37,8 +37,13 @@ def checkArgs():
 	if (keysize != 128 and keysize != 256):
 		print("ERROR: Please enter the correct keysize <128 or 256>")
 		sys.exit()
-	elif (keyfile == "None" or inputfile == "None" or outputfile == "None"):
-		print("ERROR: Please enter the following files: keyfile, inputfile, outputfile")
+	elif (keyfile == None or inputfile == None or outputfile == None):
+		if (keyfile == None):
+			print("ERROR: Missing keyfile")
+		if (inputfile == None):
+			print("ERROR: Missing inputfile")
+		if (outputfile == None):
+			print("ERROR: Missing outputfile")
 		sys.exit()
 	elif (mode != "encrypt" and mode != "decrypt"):
 		print("ERROR: Please enter a correct mode <encrypt or decrypt>")
@@ -70,12 +75,18 @@ def mix_columns():
 def main():
 	setArgs()
 
+	print(keysize)
+	print(keyfile)
+	print(inputfile)
+	print(outputfile)
+	print(mode)
+
 	# Opens and reads the files sent in from argv
 	# "rb" means to read the file in binary
 	# "wb" means to write the file in binary
-	key_file = open(keyfile, "rb")
-	input_file = open(inputfile, "rb")
-	output_file = open(oputfile, "wb")
+	key_file = open(keyfile, 'rb')
+	input_file = open(inputfile, 'rb')
+	output_file = open(outputfile, 'wb')
 
 	# The following function uses 'bytearray' returns an array of bytes 
 	# thats reads from key_file or input_file into the 
@@ -89,12 +100,6 @@ def main():
 	key_file.close()
 	input_file.close()
 	output_file.close()
-
-	print(keysize)
-	print(keyfile)
-	print(inputfile)
-	print(outputfile)
-	print(mode)
 
 if __name__ == "__main__":
 	main()
