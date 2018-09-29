@@ -267,7 +267,7 @@ def shift_rows(state):
 			Ex - Row 4 will start storing at index 3 ...
 			"""
 			temp[j] = state[i][(j + i) % 4]
-		for j in range (0, 4):s
+		for j in range (0, 4):
 			# Takes the temporary shifted row and apply it to the actual state
 			state[i][j] = temp[j]
 
@@ -290,11 +290,13 @@ def mix_columns(state):
 	02 uses MUL3 with the addition of the state[i][j] resulting MUL3[state[i][j]]
 	"""
 	for i in range (0, 4):
+		# Executes the mix-colum transformation
 		temp0 = MUL2[state[0][i]] ^ MUL3[state[1][i]] ^ state[2][i] ^ state[3][i]
 		temp1 = state[0][i] ^ MUL2[state[1][i]] ^ MUL3[state[2][i]] ^ state[3][i]
 		temp2 = state[0][i] ^ state[1][i] ^ MUL2[state[2][i]] ^ MUL3[state[3][i]]
 		temp3 = MUL3[state[0][i]] ^ state[1][i] ^ state[2][i] ^ MUL2[state[3][i]]
 
+		# Correctly copies into the state 
 		state[0][i] = temp0 
 		state[1][i] = temp1
 		state[2][i] = temp2
