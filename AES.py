@@ -45,26 +45,50 @@ def checkArgs():
 		sys.exit()
 
 #
-def encrypt:
-
+def key_expansion():
+	return
 #
-def decrypt:
-
+def encrypt():
+	return
 #
-def add_round_key:
-
+def decrypt():
+	return
 #
-def sub_bytes:
-
+def add_round_key():
+	return
 #
-def shift_rows:
-
+def sub_bytes():
+	return
 #
-def mix_columns:
+def shift_rows():
+	return
+#
+def mix_columns():
+	return
 
 # Main function, starts everything up
 def main():
 	setArgs()
+
+	# Opens and reads the files sent in from argv
+	# "rb" means to read the file in binary
+	# "wb" means to write the file in binary
+	key_file = open(keyfile, "rb")
+	input_file = open(inputfile, "rb")
+	output_file = open(oputfile, "wb")
+
+	# The following function uses 'bytearray' returns an array of bytes 
+	# thats reads from key_file or input_file into the 
+	# following variables: key_file_bytes and input_file_bytes
+	key_file_bytes = bytearray(key_file.read())
+	input_file_bytes = bytearray(input_file.read())
+
+
+
+	# Closes the files
+	key_file.close()
+	input_file.close()
+	output_file.close()
 
 	print(keysize)
 	print(keyfile)
