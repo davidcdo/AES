@@ -233,10 +233,12 @@ def add_round_key(state):
 
 # Sub-byte Transformation 
 def sub_bytes(state):
-	# Iterates through the State in a manner that matches the S_BOX's
-	# 16 by 16 grid, 256 bytes (Hence the range up to 4). As it is 
-	# iterating through the State, it replaces the current byte with
-	# another byte from the S_BOX
+	"""
+	Iterates through the State in a manner that matches the S_BOX's
+	16 by 16 grid, 256 bytes (Hence the range up to 4). As it is 
+	iterating through the State, it replaces the current byte with
+	another byte from the S_BOX
+	"""
 	for i in range(0, 4):
 		for j in range (0, 4):
 			state[i][j] = S_BOX[state[i][j]]
@@ -244,30 +246,60 @@ def sub_bytes(state):
 
 # Shift-row Transformation
 def shift_rows(state):
-	# Shifts the row to the left in accordance to the current row
-	# First Row, does not shift
-	# Second Row, shifts once to the left
-	# Third Row, shifts twice to the left
-	# Fourth Row, shifts thice to the left
-	# Any byte that 'falls off' will reappear to the right of the same row
-	
+	"""
+	Shifts the row to the left in accordance to the current row
+	First Row, does not shift
+	Second Row, shifts once to the left
+	Third Row, shifts twice to the left
+	Fourth Row, shifts thice to the left
+	Any byte that 'falls off' will reappear to the right of the same row
+	"""
+
 	# Creates a temporary array to store an already 'shifted' row
 	temp = [None for _ in range(0, 4)]
 	# Ignores the first row, covers second, third, and fourth row
 	for i in range (1, 4):
 		for j in range (0, 4):
-			# Stores shifted row depending on the current row
-			# Ex - Row 2 will start storing at index 1 ...
-			# Ex - Row 3 will start storing at index 2 ...
-			# Ex - Row 4 will start storing at index 3 ...
+			"""
+			Stores shifted row depending on the current row
+			Ex - Row 2 will start storing at index 1 ...
+			Ex - Row 3 will start storing at index 2 ...
+			Ex - Row 4 will start storing at index 3 ...
+			"""
 			temp[j] = state[i][(j + i) % 4]
-		for j in range (0, 4):
+		for j in range (0, 4):s
 			# Takes the temporary shifted row and apply it to the actual state
 			state[i][j] = temp[j]
 
 	return state
-#
+
+# Mix Column Transformation
 def mix_columns(state):
+	""" 
+	During the encryption process of mix-column transformation, it requires
+	the multiplication of every column of the current state with a fixed
+	polinomial of a(x) = {03}x^3 + {01}x^2 + {01}x + {02} . 
+	This results in a matrix of ...
+			02 03 01 01
+			01 02 03 01
+			01 01 02 03 
+			03 01 01 02
+	In a setting where i determines the row and j determines the column
+	01 simply means a state of state[i][j]
+	02 uses MUL2 with the addition of the state[i][j] resulting MUL2[state[i][j]]
+	02 uses MUL3 with the addition of the state[i][j] resulting MUL3[state[i][j]]
+	"""
+	for i in range (0, 4):
+		temp0 = MUL2[state[0][i]] ^ MUL3[state[1][i]] ^ state[2][i] ^ state[3][i]
+		temp1 = state[0][i] ^ MUL2[state[1][i]] ^ MUL3[state[2][i]] ^ state[3][i]
+		temp2 = state[0][i] ^ state[1][i] ^ MUL2[state[2][i]] ^ MUL3[state[3][i]]
+		temp3 = MUL3[state[0][i]] ^ state[1][i] ^ state[2][i] ^ MUL2[state[3][i]]
+
+		state[0][i] = temp0 
+		state[1][i] = temp1
+		state[2][i] = temp2
+		state[3][i] = temp3
+
 	return state
 
 # Main function, starts everything up
