@@ -290,25 +290,72 @@ def get_key_expansion(key_file_bytes):
 
 	return key_expansion
 
-def get_output(key_expansion):
+def get_output(key_expansion, input_file_bytes):
 	if mode == 'encrypt':
-		return encrypt(key_expansion)
+		return encrypt(key_expansion, input_file_bytes)
 	elif mode == 'decrypt':
-		return decrypt(key_expansion)
+		return decrypt(key_expansion, input_file_bytes)
 	else:
 		print("ERROR: Cannot compute outputfile,",
 			"mode does not equal encrypt or decrypt")
 		sys.exit()
 
 
-def encrypt(key_expansion):
+def encrypt(key_expansion, input_file_bytes):
+	# Initializes key values
 	output = []
-	# Normal Rounds
+	file_len = len(input_file_bytes)
 
-	# Final Rounds
+	# Add necessary paddings 
+	# Uses ZeroLength paddings
+	# Gets remaining pad needed and extends input_bytes_file
+	zero_paddings = 16 - (file_len % 16)
+	input_file_bytes.extend([0] * zero_paddings)
+	input_file_bytes[-1] = zero_paddings
+
+	# Starts encryption by blocks coming from the inputfile
+	for i in range (0, file_len, 16):
+		# Encrypts the block of 16 bytes, only 16 blocks at a time
+		currentBlock = input_file_bytes[i : i + 16]
+
+		# Initializes the state and add the initial 'AddRoundKey' to it
+		# This is initialize with 'currentBlock'
+		state = [[0 for _ in range(0, 4)] for _ in range(0, 4)]
+
+		pos = 0
+
+		# First 16 bytes will be arranged in column order, 
+		# not by the original row order
+		for i in range (0, 4):
+			for j in range (0, 4):
+				state[j][i] = currentBlock[pos]
+				pos += 1
+
+		# Finally initializes the first roundKey
+		state = add_round_key(state, key_expansion, 0)
+
+		# Uses AES standard procedure, cycle of rounds - Normal Rounds
+		# Procedure cycle order - subBytes, shiftRows, mixColumns, addRoundKey
+		for rounds in range(1, num_rounds):
+			state = sub_bytes(state)
+			state = shift_rows(state)
+			state = mix_columns(state)
+			state = add_round_key(state, key_expansion, rounds * 16)
+
+		# Uses AES standard procedure, Final Round
+		# subBytes, shiftRows, and addRoundKey (excludes mixColumns)
+		state = sub_bytes(state)
+		state = shift_rows(state)
+		state = add_round_key(state, key_expansion, num_rounds * 16)
+
+		# Reorganizes again for Column order
+		for a in range(0, 4):
+			for b in range(0, 4):
+				output.append(state[b][a])
+
 	return output
 #
-def decrypt():
+def decrypt(key_expansion, input_file_bytes):
 	output = []
 	# Normal Rounds
 
@@ -317,7 +364,7 @@ def decrypt():
 
 # Add Round Key Transformation
 def add_round_key(state, key_expansion, num):
-	pos = num
+	pos = int(num)
 
 	"""
 	Followings the following transformatioin ...
@@ -448,7 +495,7 @@ def main():
 	key_expansion = get_key_expansion(key_file_bytes)
 
 	# Encrypts or Decrypts
-	output = get_output(key_expansion)
+	output = get_output(key_expansion, input_file_bytes)
 
 
 
