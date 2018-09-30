@@ -276,11 +276,10 @@ def get_key_expansion(key_file_bytes):
 			temp[0] = temp[0] ^ con
 			for a in range (1, 4): 
 				temp[a] = temp[a] ^ 0
-		elif i % num_keys == 4 and num_keys == 8:
+		elif (i % num_keys == 4) and (num_keys == 8):
 			# Simply just SubByte the entire row with its corresponding S_BOX
 			for a in range (0, 4):
 				temp[a] = S_BOX[temp[a]]
-			
 
 		key_expansion += ([key_expansion[4 * (i - num_keys)] ^ temp[0]] +  
 			[key_expansion[4 * (i - num_keys) + 1] ^ temp[1]] + 
@@ -292,8 +291,10 @@ def get_key_expansion(key_file_bytes):
 
 def get_output(key_expansion, input_file_bytes):
 	if mode == 'encrypt':
+		print("I'm encrypting")
 		return encrypt(key_expansion, input_file_bytes)
 	elif mode == 'decrypt':
+		print("I'm decrypting")
 		return decrypt(key_expansion, input_file_bytes)
 	else:
 		print("ERROR: Cannot compute outputfile,",
@@ -313,10 +314,13 @@ def encrypt(key_expansion, input_file_bytes):
 	input_file_bytes.extend([0] * zero_paddings)
 	input_file_bytes[-1] = zero_paddings
 
+	# New file_len
+	file_len = len(input_file_bytes)
+
 	# Starts encryption by blocks coming from the inputfile
 	for i in range (0, file_len, 16):
 		# Encrypts the block of 16 bytes, only 16 blocks at a time
-		currentBlock = input_file_bytes[i : i + 16]
+		currentBlock = input_file_bytes[i : (i + 16)]
 
 		# Initializes the state and add the initial 'AddRoundKey' to it
 		# This is initialize with 'currentBlock'
@@ -326,27 +330,27 @@ def encrypt(key_expansion, input_file_bytes):
 
 		# First 16 bytes will be arranged in column order, 
 		# not by the original row order
-		for i in range (0, 4):
-			for j in range (0, 4):
-				state[j][i] = currentBlock[pos]
+		for a in range (0, 4):
+			for b in range (0, 4):
+				state[b][a] = currentBlock[pos]
 				pos += 1
 
 		# Finally initializes the first roundKey
-		state = add_round_key(state, key_expansion, 0)
+		state = addRoundKey(state, key_expansion, 0)
 
 		# Uses AES standard procedure, cycle of rounds - Normal Rounds
 		# Procedure cycle order - subBytes, shiftRows, mixColumns, addRoundKey
 		for rounds in range(1, num_rounds):
-			state = sub_bytes(state)
-			state = shift_rows(state)
-			state = mix_columns(state)
-			state = add_round_key(state, key_expansion, rounds * 16)
+			state = subBytes(state)
+			state = shiftRows(state)
+			state = mixColumns(state)
+			state = addRoundKey(state, key_expansion, rounds * 16)
 
 		# Uses AES standard procedure, Final Round
 		# subBytes, shiftRows, and addRoundKey (excludes mixColumns)
-		state = sub_bytes(state)
-		state = shift_rows(state)
-		state = add_round_key(state, key_expansion, num_rounds * 16)
+		state = subBytes(state)
+		state = shiftRows(state)
+		state = addRoundKey(state, key_expansion, num_rounds * 16)
 
 		# Reorganizes again for Column order
 		for a in range(0, 4):
@@ -363,7 +367,7 @@ def decrypt(key_expansion, input_file_bytes):
 	return output
 
 # Add Round Key Transformation
-def add_round_key(state, key_expansion, num):
+def addRoundKey(state, key_expansion, num):
 	pos = int(num)
 
 	"""
@@ -377,34 +381,41 @@ def add_round_key(state, key_expansion, num):
 	of rounds of encryption and decryption
 
 	"""
+	"""
 	for c in range(0, 4):
-		temp0 = state[0][c] ^ key_expansion[0][4 * pos + c]
-		temp0 = state[1][c] ^ key_expansion[1][4 * pos + c]
-		temp0 = state[2][c] ^ key_expansion[2][4 * pos + c]
-		temp0 = state[3][c] ^ key_expansion[3][4 * pos + c]
+		temp0 = state[0][c] ^ key_expansion[pos + c]
+		temp1 = state[1][c] ^ key_expansion[pos + c]
+		temp2 = state[2][c] ^ key_expansion[pos + c]
+		temp3 = state[3][c] ^ key_expansion[pos + c]
 
 		state[0][c] = temp0
 		state[1][c] = temp1
 		state[2][c] = temp2
 		state[3][c] = temp3
 
+	"""
+	for i in range(0, 4):
+		for j in range(0, 4):
+			state[j][i] = state[i][j] ^ key_expansion[pos]
+			pos += 1
+
 	return state
 
 # Sub-byte Transformation 
-def sub_bytes(state):
+def subBytes(state):
 	"""
 	Iterates through the State in a manner that matches the S_BOX's
 	16 by 16 grid, 256 bytes (Hence the range up to 4). As it is 
 	iterating through the State, it replaces the current byte with
 	another byte from the S_BOX
 	"""
-	for i in range(0, 4):
-		for j in range (0, 4):
+	for j in range(0, 4):
+		for i in range (0, 4):
 			state[i][j] = S_BOX[state[i][j]]
 	return state
 
 # Shift-row Transformation
-def shift_rows(state):
+def shiftRows(state):
 	"""
 	Shifts the row to the left in accordance to the current row
 	First Row, does not shift
@@ -433,7 +444,7 @@ def shift_rows(state):
 	return state
 
 # Mix Column Transformation
-def mix_columns(state):
+def mixColumns(state):
 	""" 
 	During the encryption process of mix-column transformation, it requires
 	the multiplication of every column of the current state with a fixed
@@ -497,7 +508,10 @@ def main():
 	# Encrypts or Decrypts
 	output = get_output(key_expansion, input_file_bytes)
 
-
+	# Writes to the output_file
+	# Converts the output into a format that's user friendly and then writes
+	output = array.array('B', output)
+	output_file.write(output)
 
 	# Closes the files
 	key_file.close()
