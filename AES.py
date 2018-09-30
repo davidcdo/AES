@@ -146,6 +146,9 @@ MUL14 = [
 	0xd7, 0xd9, 0xcb, 0xc5, 0xef, 0xe1, 0xf3, 0xfd, 0xa7, 0xa9, 0xbb, 0xb5, 0x9f, 0x91, 0x83, 0x8d,
 ]
 
+# Congruence LookUp Table used in the function get_key_expansion
+R_CON = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a]
+
 # Define and initializes constants
 # Initializes arguments from sys.argv
 keysize = None
@@ -200,8 +203,9 @@ def checkArgs():
 
 #
 def get_key_expansion(key_file_bytes):
-	global num_key, num_rounds
+	global num_keys, num_rounds
 
+	# Checks and Computes the correct number of keys and number of rounds
 	if keysize == 128:
 		num_keys = 4
 		num_rounds = 10
@@ -214,21 +218,129 @@ def get_key_expansion(key_file_bytes):
 			"of words in a cipher key or number of rounds", 
 			"using the current keyfile")
 		sys.exit()
-	return
-#
-def encrypt():
+
+	"""
+	References the Pseudo Code under FIPS 197, Advanced Encryption Standard (AES)
+	
+	KeyExpansion(byte key[4*Nk], word w[Nb*(Nr+1)], Nk)
+	begin
+		word temp
+		i = 0
+
+		while (i < Nk)
+			w[i] = word(key[4*i], key[4*i+1], key[4*i+2], key[4*i+3])
+			i = i+1
+		end while
+
+		i = Nk
+
+		while (i < Nb * (Nr+1)]
+			temp = w[i-1]
+			if (i mod Nk = 0)
+				temp = SubWord(RotWord(temp)) xor Rcon[i/Nk]
+			else if (Nk > 6 and i mod Nk = 4)
+				temp = SubWord(temp)
+			end if
+			w[i] = w[i-Nk] xor temp
+			i = i + 1
+		end while
+	end
+	"""
+	# Initializes the array of keys 
+	key_expansion = []
+
+	# Needs to take the first num_keys of keys and expand it
+	for i in range (0, num_keys):
+		key_expansion += ([key_file_bytes[4 * i]] + 
+			[key_file_bytes[4 * i + 1]] + 
+			[key_file_bytes[4 * i + 2]] + 
+			[key_file_bytes[4 * i + 3]])
+
+	# Needs to expand the remaining bytes left within the key
+	for i in range(num_keys, 4 * (num_rounds + 1)):
+		temp = key_expansion[4 * (i - 1) : 4 * i]
+		
+		if i % num_keys == 0:
+			# Shifts the (Column - 1)th column
+			# Shift e.g. a0, a1, a2, a3 to a1, a2, a3, a0
+			# SubBytes the whole row by its corresponding S_BOX
+			temp = temp[1 : 4] + [temp[0]]
+			for a in range (0, 4):
+				temp[a] = S_BOX[temp[a]]
+
+			# Gets corresponding Congruence value
+			con = R_CON[i // num_keys - 1]
+
+			# XOR the first column 
+			# Remaining 3 columns will be XOR with 0
+			temp[0] = temp[0] ^ con
+			for a in range (1, 4): 
+				temp[a] = temp[a] ^ 0
+		elif i % num_keys == 4 and num_keys == 8:
+			# Simply just SubByte the entire row with its corresponding S_BOX
+			for a in range (0, 4):
+				temp[a] = S_BOX[temp[a]]
+			
+
+		key_expansion += ([key_expansion[4 * (i - num_keys)] ^ temp[0]] +  
+			[key_expansion[4 * (i - num_keys) + 1] ^ temp[1]] + 
+			[key_expansion[4 * (i - num_keys) + 2] ^ temp[2]] + 
+			[key_expansion[4 * (i - num_keys) + 3] ^ temp[3]])
+
+
+	return key_expansion
+
+def get_output(key_expansion):
+	if mode == 'encrypt':
+		return encrypt(key_expansion)
+	elif mode == 'decrypt':
+		return decrypt(key_expansion)
+	else:
+		print("ERROR: Cannot compute outputfile,",
+			"mode does not equal encrypt or decrypt")
+		sys.exit()
+
+
+def encrypt(key_expansion):
+	output = []
 	# Normal Rounds
 
 	# Final Rounds
-	return
+	return output
 #
 def decrypt():
+	output = []
 	# Normal Rounds
 
 	# Final Rounds 
-	return
-#
-def add_round_key(state):
+	return output
+
+# Add Round Key Transformation
+def add_round_key(state, key_expansion, num):
+	pos = num
+
+	"""
+	Followings the following transformatioin ...
+		[s'0c,s'1c,s'2c,s'3c] = [s0c,s1c,s2c,s3c] ^ [w(round)*Nb + c]
+
+	It is a transformation that combines the RoundKey (key_expansion)
+	with the current state via XOR
+
+	This function will be used during the initial round and the cycle 
+	of rounds of encryption and decryption
+
+	"""
+	for c in range(0, 4):
+		temp0 = state[0][c] ^ key_expansion[0][4 * pos + c]
+		temp0 = state[1][c] ^ key_expansion[1][4 * pos + c]
+		temp0 = state[2][c] ^ key_expansion[2][4 * pos + c]
+		temp0 = state[3][c] ^ key_expansion[3][4 * pos + c]
+
+		state[0][c] = temp0
+		state[1][c] = temp1
+		state[2][c] = temp2
+		state[3][c] = temp3
+
 	return state
 
 # Sub-byte Transformation 
@@ -279,15 +391,20 @@ def mix_columns(state):
 	During the encryption process of mix-column transformation, it requires
 	the multiplication of every column of the current state with a fixed
 	polinomial of a(x) = {03}x^3 + {01}x^2 + {01}x + {02} . 
+	
 	This results in a matrix of ...
 			02 03 01 01
 			01 02 03 01
 			01 01 02 03 
 			03 01 01 02
+
 	In a setting where i determines the row and j determines the column
 	01 simply means a state of state[i][j]
 	02 uses MUL2 with the addition of the state[i][j] resulting MUL2[state[i][j]]
 	02 uses MUL3 with the addition of the state[i][j] resulting MUL3[state[i][j]]
+
+	In the end, computation operates column by column, XOR'ing the entire 
+	column with the adjusted matrix for a single new byte.
 	"""
 	for i in range (0, 4):
 		# Executes the mix-colum transformation
@@ -329,6 +446,9 @@ def main():
 
 	# Computes the key expansion from the key_file_bytes
 	key_expansion = get_key_expansion(key_file_bytes)
+
+	# Encrypts or Decrypts
+	output = get_output(key_expansion)
 
 
 
