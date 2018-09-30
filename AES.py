@@ -329,7 +329,7 @@ def get_output(key_expansion, input_file_bytes):
 			"mode does not equal encrypt or decrypt")
 		sys.exit()
 
-
+# Encrypts the inputfile
 def encrypt(key_expansion, input_file_bytes):
 	# Initializes key values
 	output = []
@@ -386,12 +386,63 @@ def encrypt(key_expansion, input_file_bytes):
 				output.append(state[b][a])
 
 	return output
-#
-def decrypt(key_expansion, input_file_bytes):
-	output = []
-	# Normal Rounds
 
-	# Final Rounds 
+# Decrypts the inputfile
+def decrypt(key_expansion, input_file_bytes):
+	# Initializes key values
+	output = []
+	file_len = len(input_file_bytes)
+
+	# Starts decryption by blocks coming from the inputfile
+	for i in range (0, file_len, 16):
+		# Decrypts the block of 16 bytes, only 16 blocks at a time
+		currentBlock = input_file_bytes[i : (i + 16)]
+
+		# Initializes the state and add the initial 'AddRoundKey' to it
+		# This is initialize with 'currentBlock'
+		state = [[0 for _ in range(0, 4)] for _ in range(0, 4)]
+
+		pos = 0
+
+		# First 16 bytes will be arranged in column order, 
+		# not by the original row order
+		for a in range (0, 4):
+			for b in range (0, 4):
+				state[b][a] = currentBlock[pos]
+				pos += 1
+
+		"""
+		Decryption of rounds is inverse of the encryption of rounds
+		Operations are inverse - starts at the back of the RoundKeys
+		Thus, addRoundKey must start at num_rounds * 16, 
+		then rounds * 16, then finally 0 (initial roundkey)
+		"""
+		
+		# Finally initializes the first roundKey
+		state = addRoundKey(state, key_expansion, num_rounds * 16)
+
+		# Normal Rounds
+		# Uses AES standard procedure, cycle of rounds - Normal Rounds
+		# Procedure cycle order - subBytes, shiftRows, mixColumns, addRoundKey
+		for rounds in range(1, num_rounds):
+			state = subBytes(state)
+			state = shiftRows(state)
+			state = mixColumns(state)
+			state = addRoundKey(state, key_expansion, rounds * 16)
+
+		# Final Rounds 
+		# Uses AES standard procedure, Final Round
+		# subBytes, shiftRows, and addRoundKey (excludes mixColumns)
+		state = subBytes(state)
+		state = shiftRows(state)
+		state = addRoundKey(state, key_expansion, 0)
+
+
+		# Reorganizes again for Column order
+		for a in range(0, 4):
+			for b in range(0, 4):
+				output.append(state[b][a])
+
 	return output
 
 # Add Round Key Transformation
@@ -557,6 +608,7 @@ def invMixColumns(state):
 		state[1][i] = temp1
 		state[2][i] = temp2
 		state[3][i] = temp3
+
 	return state
 
 # Main function, starts everything up
