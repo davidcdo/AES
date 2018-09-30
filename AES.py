@@ -530,6 +530,33 @@ def invShiftRows(state):
 
 # Inverted MixColumns Transformation
 def invMixColumns(state):
+	#Very similar to MixColumns Transformation
+	"""
+	Applies the inverse of a(x) = {03}x^3 + {01}x^2 + {01}x + {02}
+	From the FIPS pdf file, a^-1(x) = {0b}x^3 + {0d}x^2 + {09}x + {0e}
+
+	In matrix form... it becomes ...
+
+			0e 0b 0d 09
+			09 0e 0b 0d
+			0d 09 0e 0b
+			0b 0d 09 0e
+
+	Converted to decimal values (from hexidecimal) ...
+	0e is MUL14, 0b is MUL11, 0d is MUL13, and 09 is of course, MUL9
+	"""
+	for i in range (0, 4):
+		# Executes the inverted mix-colum transformation
+		temp0 = MUL14[state[0][i]] ^ MUL11[state[1][i]] ^ MUL13[state[2][i]] ^ MUL9[state[3][i]]
+		temp1 = MUL9[state[0][i]] ^ MUL14[state[1][i]] ^ MUL11[state[2][i]] ^ MUL13[state[3][i]]
+		temp2 = MUL13[state[0][i]] ^ MUL9[state[1][i]] ^ MUL14[state[2][i]] ^ MUL11[state[3][i]]
+		temp3 = MUL11[state[0][i]] ^ MUL13[state[1][i]] ^ MUL9[state[2][i]] ^ MUL14[state[3][i]]
+
+		# Correctly copies into the state 
+		state[0][i] = temp0 
+		state[1][i] = temp1
+		state[2][i] = temp2
+		state[3][i] = temp3
 	return state
 
 # Main function, starts everything up
