@@ -193,6 +193,7 @@ num_rounds = -1
 def setArgs():
 	args = getArgs(sys.argv)
 
+	# Sets up global values
 	global keysize, keyfile, inputfile, outputfile, mode
 
 	keysize = int(args['--keysize'])
@@ -231,6 +232,7 @@ def checkArgs():
 
 #
 def get_key_expansion(key_file_bytes):
+	# Sets up global values
 	global num_keys, num_rounds
 
 	# Checks and Computes the correct number of keys and number of rounds
@@ -241,6 +243,7 @@ def get_key_expansion(key_file_bytes):
 		num_keys = 8
 		num_rounds = 14
 
+	# Checks for error
 	if (num_keys == -1 or num_rounds == -1):
 		print("ERROR: Unable to compute the number",  
 			"of words in a cipher key or number of rounds", 
@@ -278,12 +281,9 @@ def get_key_expansion(key_file_bytes):
 	key_expansion = []
 
 	# Needs to take the first num_keys of keys and expand it
+	# Implement references ...
+	# w[i] = word(key[4*i], key[4*i+1], key[4*i+2], key[4*i+3])
 	for i in range (0, num_keys):
-		"""
-		print("Hey! Expanding first num_keys")
-		print(num_keys)
-		print(num_rounds)
-		"""
 		key_expansion += ([key_file_bytes[4 * i]] + 
 			[key_file_bytes[4 * i + 1]] + 
 			[key_file_bytes[4 * i + 2]] + 
@@ -291,26 +291,24 @@ def get_key_expansion(key_file_bytes):
 
 	# Needs to expand the remaining bytes left within the key
 	for i in range(num_keys, 4 * (num_rounds + 1)):
-		"""
-		print("Hey! Expanding remaining num_keys")
-		print(num_keys)
-		print(num_rounds)
-		"""
 		temp = key_expansion[4 * (i - 1) : 4 * i]
 		
 		if i % num_keys == 0:
 			# Shifts the (Column - 1)th column
 			# Shift e.g. a0, a1, a2, a3 to a1, a2, a3, a0
 			# SubBytes the whole row by its corresponding S_BOX
+			# Implement references SubWord(RotWord(temp))
 			temp = temp[1 : 4] + [temp[0]]
 			for a in range (0, 4):
 				temp[a] = S_BOX[temp[a]]
 
 			# Gets corresponding Congruence value
+			# Implement references Rcon[i/Nk]
 			con = R_CON[i // num_keys - 1]
 
 			# XOR the first column with 'con'
 			# Remaining 3 columns will be XOR with 0
+			# Implement references temp = SubWord(RotWord(temp)) xor Rcon[i/Nk]
 			temp[0] = temp[0] ^ con
 			for a in range (1, 4): 
 				temp[a] = temp[a] ^ 0
@@ -319,6 +317,7 @@ def get_key_expansion(key_file_bytes):
 			for a in range (0, 4):
 				temp[a] = S_BOX[temp[a]]
 
+		# Implement references w[i] = w[i-Nk] xor temp		
 		key_expansion += ([key_expansion[4 * (i - num_keys)] ^ temp[0]] +  
 			[key_expansion[4 * (i - num_keys) + 1] ^ temp[1]] + 
 			[key_expansion[4 * (i - num_keys) + 2] ^ temp[2]] + 
@@ -330,10 +329,8 @@ def get_key_expansion(key_file_bytes):
 # Helper method to determine whether to encrypt or decrypt
 def get_output(key_expansion, input_file_bytes):
 	if mode == 'encrypt':
-		print("I'm encrypting")
 		return encrypt(key_expansion, input_file_bytes)
 	elif mode == 'decrypt':
-		print("I'm decrypting")
 		return decrypt(key_expansion, input_file_bytes)
 	else:
 		print("ERROR: Cannot compute outputfile,",
@@ -458,41 +455,6 @@ def decrypt(key_expansion, input_file_bytes):
 	output = output[:-1 * output[-1]]
 
 	return output
-
-# Add Round Key Transformation
-def addRoundKey(state, key_expansion, num):
-	pos = int(num)
-
-	"""
-	Followings the following transformatioin ...
-		[s'0c,s'1c,s'2c,s'3c] = [s0c,s1c,s2c,s3c] ^ [w(round)*Nb + c]
-
-	It is a transformation that combines the RoundKey (key_expansion)
-	with the current state via XOR
-
-	This function will be used during the initial round and the cycle 
-	of rounds of encryption and decryption
-
-	"""
-	"""
-	for c in range(0, 4):
-		temp0 = state[0][c] ^ key_expansion[pos + c]
-		temp1 = state[1][c] ^ key_expansion[pos + c]
-		temp2 = state[2][c] ^ key_expansion[pos + c]
-		temp3 = state[3][c] ^ key_expansion[pos + c]
-
-		state[0][c] = temp0
-		state[1][c] = temp1
-		state[2][c] = temp2
-		state[3][c] = temp3
-
-	"""
-	for i in range(0, 4):
-		for j in range(0, 4):
-			state[j][i] = state[j][i] ^ key_expansion[pos]
-			pos += 1
-
-	return state
 
 # Sub-byte Transformation 
 def subBytes(state):
@@ -625,8 +587,32 @@ def invMixColumns(state):
 
 	return state
 
+# Add Round Key Transformation
+def addRoundKey(state, key_expansion, num):
+	pos = int(num)
+
+	"""
+	Follows the following transformatioin ...
+		[s'0c,s'1c,s'2c,s'3c] = [s0c,s1c,s2c,s3c] ^ [w(round)*Nb + c]
+
+	It is a transformation that combines the RoundKey (key_expansion)
+	with the current state via XOR
+
+	This function will be used during the initial round and the cycle 
+	of rounds of encryption and decryption
+	"""
+
+	for i in range(0, 4):
+		for j in range(0, 4):
+			# Matches by column
+			state[j][i] = state[j][i] ^ key_expansion[pos]
+			pos += 1
+
+	return state
+
 # Main function, starts everything up
 def main():
+	# Gets argv and sets up global variables
 	setArgs()
 
 	# Opens and reads the files sent in from argv
@@ -652,10 +638,8 @@ def main():
 	# Encrypts or Decrypts
 	outputdata = get_output(key_expansion, input_file_bytes)
 
-
 	# Writes to the output_file
 	# Converts the output into a format that's user friendly and then writes
-	#outputdata = array.array('B', outputdata)
 	outputdata = bytearray(outputdata)
 	output_file.write(outputdata)
 
