@@ -454,6 +454,9 @@ def decrypt(key_expansion, input_file_bytes):
 			for b in range(0, 4):
 				output.append(state[b][a])
 
+	# Unpads the ZeroPaddings that came from encrypting
+	output = output[:-1 * output[-1]]
+
 	return output
 
 # Add Round Key Transformation
