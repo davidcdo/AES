@@ -436,16 +436,16 @@ def decrypt(key_expansion, input_file_bytes):
 		# Uses AES standard procedure, cycle of rounds - Normal Rounds
 		# Procedure cycle order - subBytes, shiftRows, mixColumns, addRoundKey
 		for rounds in range(1, num_rounds):
-			state = subBytes(state)
-			state = shiftRows(state)
-			state = mixColumns(state)
+			state = invSubBytes(state)
+			state = invShiftRows(state)
+			state = invMixColumns(state)
 			state = addRoundKey(state, key_expansion, rounds * 16)
 
 		# Final Rounds 
 		# Uses AES standard procedure, Final Round
 		# subBytes, shiftRows, and addRoundKey (excludes mixColumns)
-		state = subBytes(state)
-		state = shiftRows(state)
+		state = invSubBytes(state)
+		state = invShiftRows(state)
 		state = addRoundKey(state, key_expansion, 0)
 
 
