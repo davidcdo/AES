@@ -279,6 +279,9 @@ def get_key_expansion(key_file_bytes):
 
 	# Needs to take the first num_keys of keys and expand it
 	for i in range (0, num_keys):
+		print("Hey! Expanding first num_keys")
+		print(num_keys)
+		print(num_rounds)
 		key_expansion += ([key_file_bytes[4 * i]] + 
 			[key_file_bytes[4 * i + 1]] + 
 			[key_file_bytes[4 * i + 2]] + 
@@ -286,6 +289,9 @@ def get_key_expansion(key_file_bytes):
 
 	# Needs to expand the remaining bytes left within the key
 	for i in range(num_keys, 4 * (num_rounds + 1)):
+		print("Hey! Expanding remaining num_keys")
+		print(num_keys)
+		print(num_rounds)
 		temp = key_expansion[4 * (i - 1) : 4 * i]
 		
 		if i % num_keys == 0:
@@ -417,7 +423,7 @@ def decrypt(key_expansion, input_file_bytes):
 		Thus, addRoundKey must start at num_rounds * 16, 
 		then rounds * 16, then finally 0 (initial roundkey)
 		"""
-		
+
 		# Finally initializes the first roundKey
 		state = addRoundKey(state, key_expansion, num_rounds * 16)
 
@@ -505,7 +511,7 @@ def shiftRows(state):
 	"""
 
 	# Creates a temporary array to store an already 'shifted' row
-	temp = [None for _ in range(0, 4)]
+	temp = [0 for _ in range(0, 4)]
 	# Ignores the first row, covers second, third, and fourth row
 	for i in range (1, 4):
 		for j in range (0, 4):
@@ -628,6 +634,10 @@ def main():
 	input_file = open(inputfile, 'rb')
 	output_file = open(outputfile, 'wb')
 
+	#print("Content of key_file", key_file.read())
+	#print("Content of input_file", input_file.read())
+	#print("Content of output_file", output_file.read())
+
 	# The following function uses 'bytearray' returns an array of bytes 
 	# thats reads from key_file or input_file into the 
 	# following variables: key_file_bytes and input_file_bytes
@@ -639,6 +649,9 @@ def main():
 
 	# Encrypts or Decrypts
 	output = get_output(key_expansion, input_file_bytes)
+
+	#printoutput = output 
+	#print("Content of output", bytearray(printoutput))
 
 	# Writes to the output_file
 	# Converts the output into a format that's user friendly and then writes
