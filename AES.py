@@ -279,9 +279,11 @@ def get_key_expansion(key_file_bytes):
 
 	# Needs to take the first num_keys of keys and expand it
 	for i in range (0, num_keys):
+		"""
 		print("Hey! Expanding first num_keys")
 		print(num_keys)
 		print(num_rounds)
+		"""
 		key_expansion += ([key_file_bytes[4 * i]] + 
 			[key_file_bytes[4 * i + 1]] + 
 			[key_file_bytes[4 * i + 2]] + 
@@ -289,9 +291,11 @@ def get_key_expansion(key_file_bytes):
 
 	# Needs to expand the remaining bytes left within the key
 	for i in range(num_keys, 4 * (num_rounds + 1)):
+		"""
 		print("Hey! Expanding remaining num_keys")
 		print(num_keys)
 		print(num_rounds)
+		"""
 		temp = key_expansion[4 * (i - 1) : 4 * i]
 		
 		if i % num_keys == 0:
@@ -305,13 +309,13 @@ def get_key_expansion(key_file_bytes):
 			# Gets corresponding Congruence value
 			con = R_CON[i // num_keys - 1]
 
-			# XOR the first column 
+			# XOR the first column with 'con'
 			# Remaining 3 columns will be XOR with 0
 			temp[0] = temp[0] ^ con
 			for a in range (1, 4): 
 				temp[a] = temp[a] ^ 0
 		elif (i % num_keys == 4) and (num_keys == 8):
-			# Simply just SubByte the entire row with its corresponding S_BOX
+			# Simply just SubByte the entire column with its corresponding S_BOX
 			for a in range (0, 4):
 				temp[a] = S_BOX[temp[a]]
 
@@ -323,6 +327,7 @@ def get_key_expansion(key_file_bytes):
 
 	return key_expansion
 
+# Helper method to determine whether to encrypt or decrypt
 def get_output(key_expansion, input_file_bytes):
 	if mode == 'encrypt':
 		print("I'm encrypting")
@@ -481,7 +486,7 @@ def addRoundKey(state, key_expansion, num):
 	"""
 	for i in range(0, 4):
 		for j in range(0, 4):
-			state[j][i] = state[i][j] ^ key_expansion[pos]
+			state[j][i] = state[j][i] ^ key_expansion[pos]
 			pos += 1
 
 	return state
@@ -621,12 +626,6 @@ def invMixColumns(state):
 def main():
 	setArgs()
 
-	print(keysize)
-	print(keyfile)
-	print(inputfile)
-	print(outputfile)
-	print(mode)
-
 	# Opens and reads the files sent in from argv
 	# "rb" means to read the file in binary
 	# "wb" means to write the file in binary
@@ -648,15 +647,14 @@ def main():
 	key_expansion = get_key_expansion(key_file_bytes)
 
 	# Encrypts or Decrypts
-	output = get_output(key_expansion, input_file_bytes)
+	outputdata = get_output(key_expansion, input_file_bytes)
 
-	#printoutput = output 
-	#print("Content of output", bytearray(printoutput))
 
 	# Writes to the output_file
 	# Converts the output into a format that's user friendly and then writes
-	output = array.array('B', output)
-	output_file.write(output)
+	#outputdata = array.array('B', outputdata)
+	outputdata = bytearray(outputdata)
+	output_file.write(outputdata)
 
 	# Closes the files
 	key_file.close()
